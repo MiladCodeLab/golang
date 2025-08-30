@@ -17,7 +17,10 @@ func main() {
 	wg := sync.WaitGroup{}
 	for i := range 3 {
 		wg.Add(1)
-		go worker(i, data)
+		go func() {
+			worker(i, data)
+			wg.Done()
+		}()
 	}
 
 	go func() {
