@@ -10,13 +10,13 @@ var (
 	ErrNotFound = errors.New("item not found")
 )
 
-type Linklist struct {
+type Linkedlist struct {
 	head *node
 	tail *node
 	size int
 }
 
-func (l *Linklist) Add(d string) {
+func (l *Linkedlist) Add(d string) {
 	n := new(node)
 	n.Data = d
 	l.size++
@@ -29,11 +29,14 @@ func (l *Linklist) Add(d string) {
 	l.tail = n
 }
 
-func (l *Linklist) Del(d string) error {
+func (l *Linkedlist) Del(idx int) error {
 	if l.head == nil {
-		return fmt.Errorf("%w %v", ErrNotFound, d)
+		return ErrNotFound
 	}
-	if l.head.Data == d {
+	if idx < 0 || idx >= l.size {
+		return fmt.Errorf("%w %v", ErrNotFound, idx)
+	}
+	if idx == 0 { // case 1
 		l.head = l.head.Next
 		l.size--
 		if l.head == nil {
@@ -41,28 +44,26 @@ func (l *Linklist) Del(d string) error {
 		}
 		return nil
 	}
+
 	prev := l.head
-	curr := l.head.Next
-	for curr != nil {
-		if curr.Data == d {
-			prev.Next = curr.Next
-			if curr == l.tail {
-				l.tail = prev
-			}
-			l.size--
-			return nil
-		}
-		prev = curr
-		curr = curr.Next
+	for i := 0; i < idx-1; i++ {
+		prev = prev.Next
 	}
-	return fmt.Errorf("%w %v", ErrNotFound, d)
+	curr := prev.Next
+	prev.Next = curr.Next
+
+	if curr == l.tail {
+		l.tail = prev
+	}
+	l.size--
+	return nil
 }
 
-func (l *Linklist) Len() int {
+func (l *Linkedlist) Len() int {
 	return l.size
 }
 
-func (l *Linklist) String() string {
+func (l *Linkedlist) String() string {
 	var (
 		items string
 		idx   int
@@ -78,7 +79,7 @@ func (l *Linklist) String() string {
 	return items
 }
 
-func (l *Linklist) Get(idx int) (string, error) {
+func (l *Linkedlist) Get(idx int) (string, error) {
 	if idx < 0 || idx >= l.size {
 		return "", fmt.Errorf("%w %v", ErrNotFound, idx)
 	}
@@ -95,7 +96,7 @@ type node struct {
 	Next *node
 }
 
-func (l *Linklist) Iter() iter.Seq[string] {
+func (l *Linkedlist) Iter() iter.Seq[string] {
 	return func(yield func(string) bool) {
 		for n := l.head; n != nil; n = n.Next {
 			if !yield(n.Data) {
@@ -105,7 +106,7 @@ func (l *Linklist) Iter() iter.Seq[string] {
 	}
 }
 
-func (l *Linklist) Iter2() iter.Seq2[int, string] {
+func (l *Linkedlist) Iter2() iter.Seq2[int, string] {
 	return func(yield func(int, string) bool) {
 		idx := 0
 		for n := l.head; n != nil; n = n.Next {
@@ -118,41 +119,40 @@ func (l *Linklist) Iter2() iter.Seq2[int, string] {
 }
 
 func main() {
-	fmt.Println("linklist")
-	l := new(Linklist)
+	fmt.Println("linkedlist")
+	l := new(Linkedlist)
 	l.Add("data 1")
 	l.Add("data 5")
 	l.Add("data 2")
 	l.Add("data 9")
 	l.Add("data 100")
 
-	//var (
-	//	val string
-	//	err error
-	//)
-	//
-	//val, err = l.Get(0)
-	//fmt.Println(val, err)
-	//
-	//val, err = l.Get(3)
-	//fmt.Println(val, err)
-	//
-	//val, err = l.Get(4)
-	//fmt.Println(val, err)
-	//
-	//err = l.Del("data 1")
-	//
-	//fmt.Println(l)
-	//
-	//err = l.Del("data 9")
-	//err = l.Del("data 100")
-	//
-	//err = l.Del("data 300")
-	//fmt.Println("err:", err)
-	//fmt.Println(l)
-	//
-	//fmt.Println(l.Len())
-	//
+	var (
+		val string
+		err error
+	)
+
+	val, err = l.Get(0)
+	fmt.Println(val, err)
+
+	val, err = l.Get(3)
+	fmt.Println(val, err)
+
+	val, err = l.Get(4)
+	fmt.Println(val, err)
+
+	err = l.Del(1)
+
+	fmt.Println(l)
+
+	err = l.Del(0)
+	err = l.Del(2)
+
+	fmt.Println("err:", err)
+	fmt.Println(l)
+
+	fmt.Println(l.Len())
+
 	// iterator
 
 	for data := range l.Iter() {

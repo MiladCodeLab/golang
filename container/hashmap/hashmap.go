@@ -145,7 +145,7 @@ func main() {
 	var err error
 	mp := NewHashMap(100)
 
-	fmt.Println("*****Add*****")
+	fmt.Println("*****Append*****")
 	err = mp.Add("fruit22", "apple")
 	err = mp.Add("fruit169", "banana")
 	err = mp.Add("fruit94", "cucumber")
