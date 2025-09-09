@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"iter"
 )
 
 var ErrDuplicateKey = errors.New("duplicate key")
@@ -107,6 +108,21 @@ func (h *HashMap) Len() int {
 	return h.size
 }
 
+func (h *HashMap) Iter() iter.Seq2[string, string] {
+	return func(yield func(string, string) bool) {
+		for _, v := range h.list {
+			if v == nil {
+				continue
+			}
+			for n := v.head; n != nil; n = n.next {
+				if !yield(n.key, n.value) {
+					return
+				}
+			}
+		}
+	}
+}
+
 func (h *HashMap) String() string {
 	var vals string
 	for i, v := range h.list {
@@ -136,6 +152,11 @@ func main() {
 	err = mp.Add("fruit281", "orange")
 	fmt.Println(mp)
 
+	fmt.Println("*****Iter*****")
+	for key, val := range mp.Iter() {
+		fmt.Printf("key: %s, value: %s\n", key, val)
+	}
+
 	fmt.Println("*****Get*****")
 	var val string
 	val, err = mp.Get("fruit94")
@@ -151,4 +172,5 @@ func main() {
 
 	fmt.Println("*****Len*****")
 	fmt.Println(mp.Len())
+
 }

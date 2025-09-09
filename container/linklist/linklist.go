@@ -95,7 +95,7 @@ type node struct {
 	Next *node
 }
 
-func (l *Linklist) iter() iter.Seq[string] {
+func (l *Linklist) Iter() iter.Seq[string] {
 	return func(yield func(string) bool) {
 		for n := l.head; n != nil; n = n.Next {
 			if !yield(n.Data) {
@@ -105,7 +105,7 @@ func (l *Linklist) iter() iter.Seq[string] {
 	}
 }
 
-func (l *Linklist) iter2() iter.Seq2[int, string] {
+func (l *Linklist) Iter2() iter.Seq2[int, string] {
 	return func(yield func(int, string) bool) {
 		idx := 0
 		for n := l.head; n != nil; n = n.Next {
@@ -155,13 +155,13 @@ func main() {
 	//
 	// iterator
 
-	for data := range l.iter() {
-		fmt.Println("inside iter: ", data)
+	for data := range l.Iter() {
+		fmt.Println("inside Iter: ", data)
 
 	}
 
-	for i, data := range l.iter2() {
-		fmt.Println("inside iter2: ", i, " ", data)
+	for i, data := range l.Iter2() {
+		fmt.Println("inside Iter2: ", i, " ", data)
 
 	}
 }
