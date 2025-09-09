@@ -58,7 +58,7 @@ func (l *Linklist) Del(d string) error {
 }
 
 func (l *Linklist) Len() int {
-	return l.size + 1
+	return l.size
 }
 
 func (l *Linklist) String() string {
@@ -127,4 +127,6 @@ func main() {
 	err = l.Del("data 300")
 	fmt.Println("err:", err)
 	fmt.Println(l)
+
+	fmt.Println(l.Len())
 }
