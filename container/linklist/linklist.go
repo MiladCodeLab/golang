@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"iter"
 )
 
 var (
@@ -94,6 +95,28 @@ type node struct {
 	Next *node
 }
 
+func (l *Linklist) iter() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for n := l.head; n != nil; n = n.Next {
+			if !yield(n.Data) {
+				return
+			}
+		}
+	}
+}
+
+func (l *Linklist) iter2() iter.Seq2[int, string] {
+	return func(yield func(int, string) bool) {
+		idx := 0
+		for n := l.head; n != nil; n = n.Next {
+			if !yield(idx, n.Data) {
+				return
+			}
+			idx++
+		}
+	}
+}
+
 func main() {
 	fmt.Println("linklist")
 	l := new(Linklist)
@@ -103,30 +126,42 @@ func main() {
 	l.Add("data 9")
 	l.Add("data 100")
 
-	var (
-		val string
-		err error
-	)
+	//var (
+	//	val string
+	//	err error
+	//)
+	//
+	//val, err = l.Get(0)
+	//fmt.Println(val, err)
+	//
+	//val, err = l.Get(3)
+	//fmt.Println(val, err)
+	//
+	//val, err = l.Get(4)
+	//fmt.Println(val, err)
+	//
+	//err = l.Del("data 1")
+	//
+	//fmt.Println(l)
+	//
+	//err = l.Del("data 9")
+	//err = l.Del("data 100")
+	//
+	//err = l.Del("data 300")
+	//fmt.Println("err:", err)
+	//fmt.Println(l)
+	//
+	//fmt.Println(l.Len())
+	//
+	// iterator
 
-	val, err = l.Get(0)
-	fmt.Println(val, err)
+	for data := range l.iter() {
+		fmt.Println("inside iter: ", data)
 
-	val, err = l.Get(3)
-	fmt.Println(val, err)
+	}
 
-	val, err = l.Get(4)
-	fmt.Println(val, err)
+	for i, data := range l.iter2() {
+		fmt.Println("inside iter2: ", i, " ", data)
 
-	err = l.Del("data 1")
-
-	fmt.Println(l)
-
-	err = l.Del("data 9")
-	err = l.Del("data 100")
-
-	err = l.Del("data 300")
-	fmt.Println("err:", err)
-	fmt.Println(l)
-
-	fmt.Println(l.Len())
+	}
 }
