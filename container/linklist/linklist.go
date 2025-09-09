@@ -28,7 +28,7 @@ func (l *Linklist) Add(d string) {
 	l.tail = n
 }
 
-func (l *Linklist) Delete(d string) error {
+func (l *Linklist) Del(d string) error {
 	if l.head == nil {
 		return fmt.Errorf("%w %v", ErrNotFound, d)
 	}
@@ -58,13 +58,35 @@ func (l *Linklist) Delete(d string) error {
 }
 
 func (l *Linklist) Len() int {
-	return l.size
+	return l.size + 1
 }
 
-func (l *Linklist) Print() {
+func (l *Linklist) String() string {
+	var (
+		items string
+		idx   int
+	)
+
 	for n := l.head; n != nil; n = n.Next {
-		fmt.Println(n.Data)
+		items += fmt.Sprintf("#%d: %v\t", idx, n.Data)
+		idx++
+		if idx%3 == 0 {
+			items += "\n"
+		}
 	}
+	return items
+}
+
+func (l *Linklist) Get(idx int) (string, error) {
+	if idx < 0 || idx >= l.size {
+		return "", fmt.Errorf("%w %v", ErrNotFound, idx)
+	}
+
+	curr := l.head
+	for i := 0; i < idx; i++ {
+		curr = curr.Next
+	}
+	return curr.Data, nil
 }
 
 type node struct {
@@ -81,15 +103,28 @@ func main() {
 	l.Add("data 9")
 	l.Add("data 100")
 
-	var err error
-	err = l.Delete("data 1")
+	var (
+		val string
+		err error
+	)
 
-	l.Print()
+	val, err = l.Get(0)
+	fmt.Println(val, err)
 
-	err = l.Delete("data 9")
-	err = l.Delete("data 100")
+	val, err = l.Get(3)
+	fmt.Println(val, err)
 
-	err = l.Delete("data 300")
+	val, err = l.Get(4)
+	fmt.Println(val, err)
+
+	err = l.Del("data 1")
+
+	fmt.Println(l)
+
+	err = l.Del("data 9")
+	err = l.Del("data 100")
+
+	err = l.Del("data 300")
 	fmt.Println("err:", err)
-	l.Print()
+	fmt.Println(l)
 }
