@@ -7,6 +7,7 @@ import (
 )
 
 var ErrDuplicateKey = errors.New("duplicate key")
+var ErrNotFound = errors.New("entry not found")
 
 type node struct {
 	key   string
@@ -63,6 +64,26 @@ func (h *HashMap) Add(key string, value string) error {
 	return nil
 }
 
+func (h *HashMap) Del(key string) error {
+	idx := int(h.hashFunction(key)) % h.capacity
+	if h.elements[idx] == nil {
+		return fmt.Errorf("%w: %s", ErrNotFound, key)
+	}
+	curr := h.elements[idx].head
+	prev := h.elements[idx].head
+	for curr != nil {
+		if curr.key == key {
+			//Delete here
+			prev.next = curr.next
+			return nil
+		}
+
+		prev = curr
+		curr = curr.next
+	}
+	return fmt.Errorf("%w: %s", ErrNotFound, key)
+}
+
 func (h *HashMap) String() string {
 	var vals string
 	for i, v := range h.elements {
@@ -88,5 +109,13 @@ func main() {
 	err = mp.Add("key22", "is a decent animator")
 	err = mp.Add("key149", "is a decent man")
 	fmt.Println(mp)
+
+	err = mp.Del("key22")
+	fmt.Println(mp)
+	err = mp.Del("key8")
+	fmt.Println(mp)
+	err = mp.Del("key149")
+	fmt.Println(mp)
+
 	fmt.Println(err)
 }
