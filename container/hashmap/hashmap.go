@@ -18,14 +18,14 @@ type list struct {
 	head *node
 }
 type HashMap struct {
-	elements []*list
+	list     []*list
 	size     int
 	capacity int
 }
 
 func NewHashMap(capacity int) *HashMap {
 	return &HashMap{
-		elements: make([]*list, capacity),
+		list:     make([]*list, capacity),
 		size:     0,
 		capacity: capacity,
 	}
@@ -39,15 +39,15 @@ func (h *HashMap) Add(key string, value string) error {
 		next:  nil,
 	}
 
-	if h.elements[idx] == nil {
-		h.elements[idx] = &list{
+	if h.list[idx] == nil {
+		h.list[idx] = &list{
 			head: newNode,
 		}
 		h.size++
 		return nil
 	}
 
-	curr := h.elements[idx].head
+	curr := h.list[idx].head
 	for curr != nil {
 		if curr.key == key {
 			return fmt.Errorf("%w: %s", ErrDuplicateKey, curr.key)
@@ -66,15 +66,19 @@ func (h *HashMap) Add(key string, value string) error {
 
 func (h *HashMap) Del(key string) error {
 	idx := int(h.hashFunction(key)) % h.capacity
-	if h.elements[idx] == nil {
+	if h.list[idx] == nil {
 		return fmt.Errorf("%w: %s", ErrNotFound, key)
 	}
-	curr := h.elements[idx].head
-	prev := h.elements[idx].head
+	curr := h.list[idx].head
+	var prev *node
 	for curr != nil {
 		if curr.key == key {
-			//Delete here
-			prev.next = curr.next
+			if prev == nil {
+				h.list[idx].head = curr.next
+			} else {
+				prev.next = curr.next
+			}
+			h.size--
 			return nil
 		}
 
@@ -84,9 +88,28 @@ func (h *HashMap) Del(key string) error {
 	return fmt.Errorf("%w: %s", ErrNotFound, key)
 }
 
+func (h *HashMap) Get(key string) (string, error) {
+	idx := int(h.hashFunction(key)) % h.capacity
+	if h.list[idx] == nil {
+		return "", fmt.Errorf("%w: %s", ErrNotFound, key)
+	}
+
+	curr := h.list[idx].head
+	for curr != nil {
+		if curr.key == key {
+			return curr.value, nil
+		}
+		curr = curr.next
+	}
+	return "", fmt.Errorf("%w: %s", ErrNotFound, key)
+}
+func (h *HashMap) Len() int {
+	return h.size
+}
+
 func (h *HashMap) String() string {
 	var vals string
-	for i, v := range h.elements {
+	for i, v := range h.list {
 		if v == nil {
 			continue
 		}
@@ -105,17 +128,27 @@ func (_ *HashMap) hashFunction(key string) uint32 {
 func main() {
 	var err error
 	mp := NewHashMap(100)
-	err = mp.Add("key8", "is a decent software developer")
-	err = mp.Add("key22", "is a decent animator")
-	err = mp.Add("key149", "is a decent man")
+
+	fmt.Println("*****Add*****")
+	err = mp.Add("fruit22", "apple")
+	err = mp.Add("fruit169", "banana")
+	err = mp.Add("fruit94", "cucumber")
+	err = mp.Add("fruit281", "orange")
 	fmt.Println(mp)
 
-	err = mp.Del("key22")
-	fmt.Println(mp)
-	err = mp.Del("key8")
-	fmt.Println(mp)
-	err = mp.Del("key149")
-	fmt.Println(mp)
+	fmt.Println("*****Get*****")
+	var val string
+	val, err = mp.Get("fruit94")
+	fmt.Println(val, " err:", err)
 
-	fmt.Println(err)
+	fmt.Println("*****Del*****")
+	err = mp.Del("fruit169")
+	fmt.Println(mp, " ", err)
+	err = mp.Del("fruit22")
+	fmt.Println(mp, " ", err)
+	err = mp.Del("fruit281")
+	fmt.Println(mp, " ", err)
+
+	fmt.Println("*****Len*****")
+	fmt.Println(mp.Len())
 }
