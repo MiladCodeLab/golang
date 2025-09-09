@@ -41,7 +41,6 @@ func (h *HashMap) Add(key string, value string) error {
 	if h.elements[idx] == nil {
 		h.elements[idx] = &list{
 			head: newNode,
-			tail: newNode,
 		}
 		h.size++
 		return nil
