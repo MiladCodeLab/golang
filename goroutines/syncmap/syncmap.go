@@ -66,7 +66,7 @@ func main() {
 	//fmt.Printf("ok: %v\n", ok)
 
 	// it will remove if the key exist int the map and loaded will be true.
-	val, loaded := user.LoadAndDelete(1)
+	val, loaded := user.LoadAndDelete(2)
 	if loaded {
 		fmt.Println(val)
 	}
