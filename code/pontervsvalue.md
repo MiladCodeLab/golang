@@ -1,38 +1,50 @@
-# Go Struct Passing Strategy: Pointer vs Value
+# Go Struct Passing Strategy Benchmark  
+## Pointer vs Value Passing (Classic GC vs Green Tea GC)
 
-## Context
+---
 
-We evaluated two approaches for passing a **large domain struct (~200 bytes)** across multiple application layers (controller → service → repository → database):
+## Executive Summary
 
-- **Value passing** (`Conference`)
-- **Pointer passing** (`*Conference`)
+We benchmarked **pointer passing (`*Conference`) vs value passing (`Conference`)** for a **large domain struct (~200 bytes)** across multiple layers.  
+Tests were executed under:
 
-The struct includes multiple `time.Time`, `uuid.UUID`, strings, and pointer fields, making it a **non-trivial, heap-influencing object**.
+1. **Classic Go GC**
+2. **Green Tea GC (GOEXPERIMENT=greenteagc)**
+
+### Final conclusion (after both GCs)
+
+- **With Classic GC:** Pointer passing is clearly superior.
+- **With Green Tea GC:** Both approaches converge in performance, but **pointer passing remains the correct architectural default** for large structs.
+
+Green Tea GC **reduces the penalty of copying**, but it **does not reverse the architectural recommendation**.
 
 ---
 
 ## Struct Characteristics
 
 - Approximate size: **~200 bytes**
-- Contains:
-  - Heap-backed fields (`string`, pointers)
-  - Multiple `time.Time` values
-  - UUIDs
+- Fields include:
+  - Multiple `time.Time`
+  - `uuid.UUID`
+  - `string` (heap-backed)
+  - Pointer fields
 - Passed through **4 layers**
-- High iteration count, GC-sensitive workload
+- High-iteration, GC-sensitive workload
 
 ---
 
-## Test Setup
+## Test Configuration
 
-- Runtime duration: **1 minute**
-- Identical logic and workload
-- Metrics captured via `runtime.MemStats`
-- Go runtime defaults (GC enabled)
+- Duration: **1 minute**
+- Same workload for all tests
+- Metrics collected via `runtime.MemStats`
+- Two GC modes:
+  - Default GC
+  - `GOEXPERIMENT=greenteagc`
 
 ---
 
-## Results
+## Results — Classic Go GC
 
 ### Pointer Passing (`*Conference`)
 
@@ -62,58 +74,132 @@ GC Count:  3,945
 
 ```
 
----
+### Interpretation (Classic GC)
 
-## Comparative Analysis
+- Pointer passing:
+  - **Higher throughput**
+  - Stable heap
+  - More GC cycles, but cheaper per cycle
+- Value passing:
+  - Slightly fewer allocations
+  - Lower GC count
+  - **Pays repeated ~200-byte copy cost per layer**
 
-| Metric | Pointer Passing | Value Passing | Insight |
-|-----|-----------------|---------------|--------|
-| Throughput | **Higher** | Lower | Fewer struct copies |
-| Struct Copies | **0** | 4 per request | Scales poorly with size |
-| TotalAlloc | Slightly higher | Slightly lower | Cumulative metric only |
-| Live Heap | 3 MB | 1 MB | Both stable |
-| Stack Usage | Identical | Identical | No stack pressure difference |
-| GC Count | Slightly higher | Slightly lower | GC cycles are cheap due to low live heap |
-
----
-
-## Interpretation
-
-- **Throughput is higher with pointer passing**, despite marginally more allocations.
-- **Live heap remains flat** in both cases, indicating healthy GC behavior.
-- GC frequency alone is **not a performance KPI**.
-- The cost of copying a ~200-byte struct across multiple layers outweighs the cost of short-lived heap allocations.
+**Winner (Classic GC): Pointer passing**
 
 ---
 
-## Architectural Implications
+## Results — Green Tea GC
+
+### Pointer Passing (`*Conference`)
+
+```
+
+Iterations: 219,000,000
+TotalAlloc: 14,202 MB
+HeapAlloc:  1 MB
+StackInuse: 128 KB
+Mallocs:   1,095,000,166
+Frees:     1,094,885,549
+GC Count:  4,014
+
+```
+
+### Value Passing (`Conference`)
+
+```
+
+Iterations: 219,000,000
+TotalAlloc: 14,202 MB
+HeapAlloc:  2 MB
+StackInuse: 128 KB
+Mallocs:   1,095,000,191
+Frees:     1,094,864,696
+GC Count:  4,017
+
+```
+
+---
+
+## Comparative Analysis — Green Tea GC
+
+| Metric | Pointer | Value | Observation |
+|------|--------|-------|------------|
+| Iterations | Equal | Equal | Throughput converged |
+| TotalAlloc | Equal | Equal | GC optimized allocation paths |
+| HeapAlloc | **Lower** | Higher | Pointer retains advantage |
+| StackInuse | Equal | Equal | No stack pressure difference |
+| Mallocs | Equal | Equal | GC removes allocation bias |
+| GC Count | Slightly lower | Slightly higher | Negligible difference |
+
+---
+
+## What Changed with Green Tea GC
+
+Green Tea GC significantly improves:
+
+- Allocation fast paths
+- Short-lived object reclamation
+- Copy vs allocate trade-offs
+
+As a result:
+- Value passing is **less penalized**
+- Pointer passing no longer dominates throughput
+
+However:
+
+> **Green Tea GC optimizes GC cost — it does not eliminate CPU copy cost.**
+
+The ~200-byte struct is still copied **four times per request** when passed by value.
+
+---
+
+## Architectural Interpretation
+
+### Why pointer passing still wins long-term
+
+Even though performance converges under Green Tea GC:
+
+- Struct size will likely grow
+- Layer count may increase
+- Fields may become more complex
+- Copy cost scales linearly
+- Pointer cost remains constant (8 bytes)
 
 Pointer passing:
-
-- Eliminates copy amplification
-- Scales better as the struct evolves
-- Reduces CPU overhead from memory copying
-- Produces predictable memory behavior
-- Aligns with Go best practices for large aggregates
+- Scales predictably
+- Is refactor-safe
+- Avoids copy amplification
+- Matches Clean Architecture and Go idioms
 
 Value passing:
-
-- Slightly fewer allocations
-- Lower GC count
-- But incurs repeated large memory copies
-- Becomes increasingly expensive as complexity grows
+- Becomes risky as domain complexity increases
+- Optimized today, fragile tomorrow
 
 ---
 
 ## Final Verdict
 
-**Passing the struct by pointer (`*Conference`) is the correct and more efficient approach.**
+### Classic GC
+✅ **Pointer passing is clearly superior**
 
-For a ~200-byte struct passed across multiple layers:
-- Pointer passing delivers higher throughput
-- Maintains stable heap usage
-- Avoids unnecessary memory copying
-- Fits production-grade Go backend architecture
+### Green Tea GC
+⚖ **Performance parity achieved**  
+✅ **Pointer passing remains the correct default**
 
-**Recommendation:**  
-Standardize on pointer passing for large domain models and aggregates.
+---
+
+## Recommendation
+
+For a **~200-byte domain struct passed across multiple layers**:
+
+> **Standardize on pointer passing (`*Conference`).**
+
+Green Tea GC makes value passing *acceptable*,  
+but pointer passing remains **safer, more scalable, and architecturally sound**.
+
+---
+
+## One-line takeaway
+
+**Green Tea GC narrows the gap, but it does not change the rule: large structs cross layers by pointer.**

@@ -15,7 +15,7 @@ func main() {
 	}
 
 	var g errgroup.Group
-	g.SetLimit(1)
+	g.SetLimit(3)
 
 	for _, url := range urls {
 		g.Go(func() error {

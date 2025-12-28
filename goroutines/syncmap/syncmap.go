@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/netip"
 	"sync"
 )
 
@@ -70,6 +71,8 @@ func main() {
 	if loaded {
 		fmt.Println(val)
 	}
+
+	ip := netip.Addr{}
 
 	user.Range(func(key, value interface{}) bool {
 		fmt.Println(key, value)

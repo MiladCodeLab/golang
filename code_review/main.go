@@ -1,47 +1,76 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
-/*
-Input:
-
-[1, 2, 3]
-[4, 5, 6] (map: key(2,3), val = 21) O(1)
-[7, 8, 9]
-
-n^2 + o(1)= n^2
-Output:
-
-[1, 3, 6] indexX = 2, indexY = 3
-[5, 12, 21]
-[12, 27, 45]
-*/
-
-func main() {
-	arr := [][]int{
-		{1, 2, 3},
-		{4, 5, 6},
-		{7, 8, 9},
-	}
-	var result [3][3]int
-	fmt.Println(len(arr))
-	//result := make([][]int, len(arr))
-	for indexX := 0; indexX < 3; indexX++ {
-		for indexY := 0; indexY < 3; indexY++ {
-			//fmt.Println(indexX, indexY)
-			result[indexX][indexY] = cal(arr, indexX, indexY)
-		}
-	}
-
-	fmt.Println(result)
+type User struct {
+	ID       int
+	Name     string
+	Email    string
+	IsActive bool
 }
-func cal(arr [][]int, indexX, indexY int) int {
-	number := 0
-	for x := 0; x <= indexX; x++ {
-		for y := 0; y <= indexY; y++ {
-			//fmt.Println(x, "  ", y, "  ", arr[x][y])
-			number += arr[x][y]
-		}
+type DataProcessor interface {
+	Process(data interface{}) interface{}
+}
+
+func ProcessUserData(processor DataProcessor, userData interface{}) string {
+	result := processor.Process(userData)
+	output := fmt.Sprintf("%v", result)
+	output = strings.Replace(output, "{", "", -1)
+	output = strings.Replace(output, "}", "", -1)
+	output = strings.Replace(output, " ", "_", -1)
+	if output == "" {
+		return "no_data"
 	}
-	return number
+	return output
+}
+
+type UserFormatter struct{}
+
+func (uf UserFormatter) Process(data interface{}) interface{} {
+	user := data.(User)
+	// Format user data
+	var status string
+	if user.IsActive == true {
+		status = "active"
+	} else {
+		status = "inactive"
+	}
+	return fmt.Sprintf("User_%d_%s_%s_%s", user.ID, user.Name, user.Email, status)
+}
+
+type NumberProcessor struct{}
+
+func (np NumberProcessor) Process(data interface{}) interface{} {
+	switch v := data.(type) {
+	case int:
+		return v * 2
+	case string:
+		if num, err := strconv.Atoi(v); err == nil {
+			return num * 2
+		}
+		return 0
+	}
+	return nil
+}
+func main() {
+	user := User{
+		ID:       1,
+		Name:     "John Doe",
+		Email:    "john@example.com",
+		IsActive: true,
+	}
+	userFormatter := UserFormatter{}
+	result1 := ProcessUserData(userFormatter, user)
+	fmt.Println("User result:", result1)
+	numberProcessor := NumberProcessor{}
+	result2 := ProcessUserData(numberProcessor, 42)
+	fmt.Println("Number result:", result2)
+	result3 := ProcessUserData(numberProcessor, "21")
+	fmt.Println("String number result:", result3)
+	result4 := ProcessUserData(numberProcessor, "invalid")
+	fmt.Println("Invalid data result:", result4)
 }
