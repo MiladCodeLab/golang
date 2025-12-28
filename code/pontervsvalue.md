@@ -1,3 +1,66 @@
+# Go Struct Passing Strategy: Pointer vs Value
+
+## Context
+
+We evaluated two approaches for passing a **large domain struct (~200 bytes)** across multiple application layers (controller → service → repository → database):
+
+- **Value passing** (`Conference`)
+- **Pointer passing** (`*Conference`)
+
+The struct includes multiple `time.Time`, `uuid.UUID`, strings, and pointer fields, making it a **non-trivial, heap-influencing object**.
+
+---
+
+## Struct Characteristics
+
+- Approximate size: **~200 bytes**
+- Contains:
+  - Heap-backed fields (`string`, pointers)
+  - Multiple `time.Time` values
+  - UUIDs
+- Passed through **4 layers**
+- High iteration count, GC-sensitive workload
+
+---
+
+## Test Setup
+
+- Runtime duration: **1 minute**
+- Identical logic and workload
+- Metrics captured via `runtime.MemStats`
+- Go runtime defaults (GC enabled)
+
+---
+
+## Results
+
+### Pointer Passing (`*Conference`)
+
+```
+
+Iterations: 224,000,000
+TotalAlloc: 14,526 MB
+HeapAlloc:  3 MB
+StackInuse: 192 KB
+Mallocs:   1,120,000,403
+Frees:     1,119,781,350
+GC Count:  4,014
+
+```
+
+### Value Passing (`Conference`)
+
+```
+
+Iterations: 220,000,000
+TotalAlloc: 14,267 MB
+HeapAlloc:  1 MB
+StackInuse: 192 KB
+Mallocs:   1,100,000,449
+Frees:     1,099,898,049
+GC Count:  3,945
+
+```
 
 ---
 
